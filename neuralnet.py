@@ -58,8 +58,10 @@ class NeNet(object):
         return dWinput, dWoutput
      
     def sig(self, z):
+        z = np.clip(z, -500, 500)
         return 1/(1+np.exp(-z))
     def dsig(self, z):
+        z = np.clip(z, -100, 100)        
         return (np.exp(-z)/(1+np.exp(-z))**2)
     
     def getWeightVector(self):
@@ -91,19 +93,25 @@ class NeNetTrainer(object):
 
         params0 = self.N.getWeightVector()
 
-        options = {'maxiter': 200, 'disp' : True}
+        options = {'maxiter': 200, 'disp' : False}
         _res = optimize.minimize(self.costwrapper, params0, jac = True, method = 'BFGS', args = (INPUT, OUTPUT), options=options, callback = self.callback)
         
         #update weights
         self.N.setWeightVector(_res.x)
         self.optimizationResults = _res
 
-N = NeNet(2, 1, 2)
+
+#simple XOR function as example
 X = np.array(([0, 0], [0, 1], [1, 0], [1,1]), dtype = int)
 X = X/np.amax(X, axis=0)
 y = np.array(([0], [1], [1], [0]), dtype = int)
 y = y/np.amax(y, axis=0)
-trainer = NeNetTrainer(N)
-trainer.train(X, y)
-print(N.fprop(X))
-
+while True:
+    N = NeNet(2, 1, 2)
+    trainer = NeNetTrainer(N)
+    trainer.train(X, y)
+    result = trainer.optimizationResults
+    if result.fun < 0.1:
+        print(N.fprop(X)) 
+        print("Final cost function value: " + str(round(result.fun, 9)))
+        break
